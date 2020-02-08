@@ -12,11 +12,20 @@ out vec4 out_Col;
 const int MAX_MARCHING_STEPS = 256;
 const float EPSILON = 0.001;
 
+const float k_coeff - 0.1;
+
 vec3 center_sphere = vec3(0.0, 0.0, 0.0);
 vec3 right_sphere = vec3(5.0, 0.0, 0.0);
 vec3 left_sphere = vec3(-5.0, 0.0, 0.0);
 vec3 up_sphere = vec3(0.0, 5.0, 0.0);
 
+
+struct Intersection {
+    vec3 p;
+    vec3 normal;
+    float t;
+    int objHit;
+};
 
 vec3 rotateX(vec3 p, float a) {
     return vec3(p.x, cos(a) * p.y - sin(a) * p.z, sin(a) * p.y + cos(a) * p.z);
@@ -30,12 +39,30 @@ vec3 rotateZ(vec3 p, float a) {
     return vec3(cos(a) * p.x - sin(a) * p.y, sin(a) * p.x + cos(a) * p.y, p.z);
 }
 
-struct Intersection {
-    vec3 p;
-    vec3 normal;
-    float t;
-    int objHit;
-};
+float opUnion( float d1, float d2 ) {  min(d1,d2); }
+
+float opSubtraction( float d1, float d2 ) { return max(-d1,d2); }
+
+float opIntersection( float d1, float d2 ) { return max(d1,d2); }
+
+float opSmoothUnion( float d1, float d2, float k ) {
+    float h = clamp( 0.5 + 0.5*(d2-d1)/k, 0.0, 1.0 );
+    return mix( d2, d1, h ) - k*h*(1.0-h); }
+
+float opSmoothSubtraction( float d1, float d2, float k ) {
+    float h = clamp( 0.5 - 0.5*(d2+d1)/k, 0.0, 1.0 );
+    return mix( d2, -d1, h ) + k*h*(1.0-h); }
+
+float opSmoothIntersection( float d1, float d2, float k ) {
+    float h = clamp( 0.5 - 0.5*(d2-d1)/k, 0.0, 1.0 );
+    return mix( d2, d1, h ) + k*h*(1.0-h); }
+
+// polynomial smooth min (k = 0.1);
+float sminCubic( float a, float b, float k )
+{
+    float h = max( k-abs(a-b), 0.0 )/k;
+    return min( a, b ) - h*h*h*k*(1.0/6.0);
+}
 
 // point, radius, center
 float SphereSDF(vec3 p, float r, vec3 c) {
