@@ -12,6 +12,23 @@ out vec4 out_Col;
 const int MAX_MARCHING_STEPS = 256;
 const float EPSILON = 0.001;
 
+vec3 center_sphere = vec3(0.0, 0.0, 0.0);
+vec3 right_sphere = vec3(5.0, 0.0, 0.0);
+vec3 left_sphere = vec3(-5.0, 0.0, 0.0);
+vec3 up_sphere = vec3(0.0, 5.0, 0.0);
+
+
+vec3 rotateX(vec3 p, float a) {
+    return vec3(p.x, cos(a) * p.y - sin(a) * p.z, sin(a) * p.y + cos(a) * p.z);
+}
+    
+vec3 rotateY(vec3 p, float a) {
+    return vec3(cos(a) * p.x + sin(a) * p.z, p.y, -sin(a) * p.x + cos(a) * p.z);
+}
+
+vec3 rotateZ(vec3 p, float a) {
+    return vec3(cos(a) * p.x - sin(a) * p.y, sin(a) * p.x + cos(a) * p.y, p.z);
+}
 
 struct Intersection {
     vec3 p;
@@ -26,16 +43,16 @@ float SphereSDF(vec3 p, float r, vec3 c) {
 }
 
 float SceneSDF(in vec3 pos) {
-  float t = min(SphereSDF(pos, 0.5, vec3(0.0, 0.0, 0.0)), SphereSDF(pos, 0.5, vec3(5.0, 0.0, 0.0)));
-  t = min(t, SphereSDF(pos, 0.5, vec3(-5.0, 0.0, 0.0)));
-  return min(t, SphereSDF(pos, 0.5, vec3(0.0, 5.0, 0.0)));
+  float t = min(SphereSDF(pos, 0.5, center_sphere), SphereSDF(pos, 0.5, right_sphere));
+  t = min(t, SphereSDF(pos, 0.5, left_sphere));
+  return min(t, SphereSDF(pos, 0.5, up_sphere));
 }
 
 float SceneSDF(in vec3 pos, out int objHit) {
-  float s0 = SphereSDF(pos, 0.5, vec3(0.0, 0.0, 0.0));
-  float s1 = SphereSDF(pos, 0.5, vec3(5.0, 0.0, 0.0));
-  float s2 = SphereSDF(pos, 0.5, vec3(-5.0, 0.0, 0.0));
-  float s3 = SphereSDF(pos, 0.5, vec3(0.0, 5.0, 0.0));
+  float s0 = SphereSDF(pos, 0.5, center_sphere);
+  float s1 = SphereSDF(pos, 0.5, right_sphere);
+  float s2 = SphereSDF(pos, 0.5, left_sphere);
+  float s3 = SphereSDF(pos, 0.5, up_sphere);
 	
   float t = s0;
   objHit = 0;
@@ -118,6 +135,17 @@ void RayCast(out vec3 origin, out vec3 direction, in float foyY) {
 }
 
 void main() {
+
+  float rotation = u_Time * 3.14159 * 0.01;
+  float rotation1 = rotation * 1.5;
+  float rotation2 = rotation / 1.5;
+
+
+  //center_sphere = rotateZ(center_sphere, rotation);
+  //right_sphere = rotateZ(right_sphere, rotation2);
+  //left_sphere = rotateZ(left_sphere, rotation1);
+  //up_sphere = rotateZ(up_sphere, rotation);
+
 
   vec3 rayOrigin;
   vec3 rayDirection;
