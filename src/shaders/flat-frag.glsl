@@ -12,13 +12,16 @@ out vec4 out_Col;
 const int MAX_MARCHING_STEPS = 256;
 const float EPSILON = 0.001;
 
-const float k_coeff - 0.1;
+const float k_coeff = 0.1;
 
-vec3 center_sphere = vec3(0.0, 0.0, 0.0);
-vec3 right_sphere = vec3(5.0, 0.0, 0.0);
-vec3 left_sphere = vec3(-5.0, 0.0, 0.0);
-vec3 up_sphere = vec3(0.0, 5.0, 0.0);
+const vec3 l0 = vec3(2.0, 0.0, 0.0);
+const vec3 l1 = vec3(2.0, 0.5, 0.0);
+const vec3 l2 = vec3(0.0, 0.0, 0.0);
+const vec3 l3 = vec3(0.0, 0.5, 0.0);
+const vec3 l4 = vec3(-2.0, 0.0, 0.0);
+const vec3 l5 = vec3(-2.0, 0.5, 0.0);
 
+const vec3 spheres[6] = vec3[6](l0, l1, l2, l3, l4, l5);
 
 struct Intersection {
     vec3 p;
@@ -39,7 +42,7 @@ vec3 rotateZ(vec3 p, float a) {
     return vec3(cos(a) * p.x - sin(a) * p.y, sin(a) * p.x + cos(a) * p.y, p.z);
 }
 
-float opUnion( float d1, float d2 ) {  min(d1,d2); }
+float opUnion( float d1, float d2 ) {  return min(d1,d2); }
 
 float opSubtraction( float d1, float d2 ) { return max(-d1,d2); }
 
@@ -70,35 +73,100 @@ float SphereSDF(vec3 p, float r, vec3 c) {
 }
 
 float SceneSDF(in vec3 pos) {
-  float t = min(SphereSDF(pos, 0.5, center_sphere), SphereSDF(pos, 0.5, right_sphere));
-  t = min(t, SphereSDF(pos, 0.5, left_sphere));
-  return min(t, SphereSDF(pos, 0.5, up_sphere));
+  float s0 = SphereSDF(pos, 0.5, l0);
+  float s1 = SphereSDF(pos, 0.5, l1);
+  float s2 = SphereSDF(pos, 0.5, l2);
+  float s3 = SphereSDF(pos, 0.5, l3);
+  float s4 = SphereSDF(pos, 0.5, l4);
+  float s5 = SphereSDF(pos, 0.5, l5);
+
+  float c0 = opSmoothIntersection(s0, s1, k_coeff);
+  float c1 = opSmoothSubtraction(s2, s3, k_coeff);
+  float c2 = sminCubic(s4, s5, k_coeff);
+	
+  return min(c0, min(c1, c2));
 }
 
 float SceneSDF(in vec3 pos, out int objHit) {
-  float s0 = SphereSDF(pos, 0.5, center_sphere);
-  float s1 = SphereSDF(pos, 0.5, right_sphere);
-  float s2 = SphereSDF(pos, 0.5, left_sphere);
-  float s3 = SphereSDF(pos, 0.5, up_sphere);
+  float s0 = SphereSDF(pos, 0.5, l0);
+  float s1 = SphereSDF(pos, 0.5, l1);
+  float s2 = SphereSDF(pos, 0.5, l2);
+  float s3 = SphereSDF(pos, 0.5, l3);
+  float s4 = SphereSDF(pos, 0.5, l4);
+  float s5 = SphereSDF(pos, 0.5, l5);
+
+  float c0 = opSmoothIntersection(s0, s1, k_coeff);
+  float c1 = opSmoothSubtraction(s2, s3, k_coeff);
+  float c2 = sminCubic(s4, s5, k_coeff);
 	
-  float t = s0;
+  float t = c0;
   objHit = 0;
 
-  if (s1 < t) {
-    t = s1;
+  if (c1 < t) {
+    t = c1;
     objHit = 1;
   }
-  if (s2 < t) {
-    t = s2;
+  if (c2 < t) {
+    t = c2;
     objHit = 2;
-  }
-  if (s3 < t) {
-    t = s3;
-    objHit = 3;
   }
 
   return t;
 }
+
+// float SceneSDF(in vec3 pos) {
+//   float t = SphereSDF(pos, 0.5, spheres[0]);
+//   for (int i = 1; i < spheres.length(); i++) {
+//     t = min(t, SphereSDF(pos, 0.5, spheres[i]));
+//   }
+//   return t;
+// }
+
+// float SceneSDF(in vec3 pos, out int objHit) {
+  
+//   float t = SphereSDF(pos, 0.5, spheres[0]);
+//   objHit = 0;
+
+//   for (int i = 1; i < spheres.length(); i++) {
+//     float temp = SphereSDF(pos, 0.5, spheres[i]);
+//     if (temp < t) {
+//       t = temp;
+//       objHit = i;
+//     }
+//   }
+//   return t;
+// }
+
+// float SceneSDF(in vec3 pos) {
+//   float t = min(SphereSDF(pos, 0.5, center_sphere), SphereSDF(pos, 0.5, right_sphere));
+//   t = min(t, SphereSDF(pos, 0.5, left_sphere));
+//   return min(t, SphereSDF(pos, 0.5, up_sphere));
+// }
+
+// float SceneSDF(in vec3 pos, out int objHit) {
+//   float s0 = SphereSDF(pos, 0.5, center_sphere);
+//   float s1 = SphereSDF(pos, 0.5, right_sphere);
+//   float s2 = SphereSDF(pos, 0.5, left_sphere);
+//   float s3 = SphereSDF(pos, 0.5, up_sphere);
+	
+//   float t = s0;
+//   objHit = 0;
+
+//   if (s1 < t) {
+//     t = s1;
+//     objHit = 1;
+//   }
+//   if (s2 < t) {
+//     t = s2;
+//     objHit = 2;
+//   }
+//   if (s3 < t) {
+//     t = s3;
+//     objHit = 3;
+//   }
+
+//   return t;
+// }
 
 float RayMarch(in vec3 eye, in vec3 viewRayDirection, out int objHit) {
   float marchedDist = 0.0;
