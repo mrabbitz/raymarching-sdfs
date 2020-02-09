@@ -14,8 +14,8 @@ const float EPSILON = 0.001;
 
 const float k_coeff = 0.1;
 
-vec3 l0 = vec3(2.0, 0.0, 0.0);
-vec3 l1 = vec3(2.0, 0.5, 0.0);
+vec3 l0 = vec3(-3.0, 0.0, 0.0);
+vec3 l1 = vec3(-3.0, 0.5, 0.0);
 vec3 l2 = vec3(0.0, 0.0, 0.0);
 vec3 l3 = vec3(0.0, 0.5, 0.0);
 vec3 l4 = vec3(-2.0, 0.0, 0.0);
@@ -184,13 +184,36 @@ float RayMarch(in vec3 eye, in vec3 viewRayDirection, out int objHit) {
   return -1.0;
 }
 
+bool ShadowTest(vec3 p) {
+
+  bool returnVal = false;
+
+  vec3 rayDirection = normalize(vec3(0.0, 0.0, 0.0) - p);
+  float lengthBetweenPointAndLight = length(vec3(0.0, 0.0, 0.0) - p);
+
+  vec3 shadowRayayOrigin = p + rayDirection;
+  vec3 shadowRayayDirection = rayDirection;
+
+  int objHit = -1;
+  float t = -1.0;
+  t = RayMarch(shadowRayayOrigin, shadowRayayDirection, objHit);
+
+  if (objHit != -1) {
+    if (t < lengthBetweenPointAndLight) {
+      returnVal = true;
+    }
+  }
+
+  return returnVal;
+}
+
 vec3 ComputeColor(vec3 p, vec3 n, int objHit) {
   vec3 color;
   if (objHit == 0) {
     color = vec3(1.0, 0.0, 0.0);
   }
   else if (objHit == 1) {
-    color = vec3(0.0, 1.0, 0.0);
+    return vec3(1.0, 77.0/255.0, 0.0);
   }
   else if (objHit == 2) {
     color = vec3(0.0, 0.0, 1.0);
@@ -201,12 +224,15 @@ vec3 ComputeColor(vec3 p, vec3 n, int objHit) {
 
   vec3 sumLightColors = vec3(0.0);
 
-  vec3 lightVec = normalize(vec3(0.0, 0.0, -10.0) - p);
+  if(!ShadowTest(p)) {
 
-  // Calculate the diffuse term for Lambert shading
-  float diffuseTerm = clamp(dot(n, lightVec), 0.0, 1.0);    // Avoid negative lighting values with clamp
+    vec3 lightVec = normalize(vec3(0.0, 0.0, 0.0) - p);
 
-  sumLightColors += vec3(1.0, 1.0, 1.0) * diffuseTerm;
+    // Calculate the diffuse term for Lambert shading
+    float diffuseTerm = clamp(dot(n, lightVec), 0.0, 1.0);    // Avoid negative lighting values with clamp
+
+    sumLightColors += vec3(1.0, 1.0, 1.0) * diffuseTerm;
+  }
 
   return color * sumLightColors;
 }
@@ -262,12 +288,12 @@ void main() {
   float rotation1 = rotation * 1.5;
   float rotation2 = rotation / 1.5;
 
-  l0 = rotateY(l0, rotation);
-  l1 = rotateY(l1, rotation);
-  l2 = rotateX(l2, rotation);
-  l3 = rotateX(l3, rotation);
-  l4 = rotateZ(l4, rotation);
-  l5 = rotateZ(l5, rotation);
+  // l0 = rotateY(l0, rotation);
+  // l1 = rotateY(l1, rotation);
+  // l2 = rotateX(l2, rotation);
+  // l3 = rotateX(l3, rotation);
+  // l4 = rotateZ(l4, rotation);
+  // l5 = rotateZ(l5, rotation);
 
 
   vec3 rayOrigin;
