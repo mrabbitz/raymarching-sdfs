@@ -14,16 +14,28 @@ const float EPSILON = 0.001;
 
 const float k_coeff = 0.1;
 
-vec3 l0 = vec3(-3.0, 0.0, 0.0);
-vec3 l1 = vec3(-3.0, 0.5, 0.0);
-vec3 l2 = vec3(2.0, 0.0, 0.0);
-vec3 l3 = vec3(2.0, 0.5, 0.0);
-vec3 l4 = vec3(-2.0, 0.0, 0.0);
-vec3 l5 = vec3(-2.0, 0.5, 0.0);
+vec3 l0 = vec3(-6.0, 0.0, 0.0);
+vec3 l1 = vec3(-6.0, 0.5, 0.0);
+vec3 l2 = vec3(5.0, 0.0, 0.0);
+vec3 l3 = vec3(5.0, 0.5, 0.0);
+vec3 l4 = vec3(-5.0, 0.0, 0.0);
+vec3 l5 = vec3(-5.0, 0.5, 0.0);
 
 //const vec3 spheres[6] = vec3[6](l0, l1, l2, l3, l4, l5);
 
 vec3 sunPos = vec3(0.0, 0.0, 0.0);
+float sunRadius = 2.0;
+
+vec3 sunHueAndIntensity = vec3(2.0, 2.0, 2.0);
+
+vec3 earthPos = vec3(-3.5, 0.0, 0.0);
+float earthRadius = 0.5;
+
+vec2 earthOffset = vec2(0.0, 0.2);
+
+vec3 moonPos = vec3(-1, 0.0, 0.0);
+float moonRadius = 0.3;
+float moonCraterRadius = 0.1;
 
 struct Intersection {
     vec3 p;
@@ -107,9 +119,26 @@ float SceneSDF(in vec3 pos) {
   float c1 = opSmoothSubtraction(s2, s3, k_coeff);
   float c2 = sminCubic(s4, s5, k_coeff);
 
-  float sun = SphereSDF(pos, 0.5, sunPos);
+  float sun = SphereSDF(pos, sunRadius, sunPos);
+
+  float earth = SphereSDF(pos, earthRadius, earthPos - earthOffset.yxx);
+  float earth1 = SphereSDF(pos, earthRadius, earthPos + earthOffset.yxx);
+  float earth2 = SphereSDF(pos, earthRadius, earthPos + earthOffset.xyx);
+  float earth3 = SphereSDF(pos, earthRadius, earthPos + earthOffset.xxy);
+  float earth4 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xyx);
+
+  earth = sminCubic(earth, earth1, k_coeff);
+  earth2 = sminCubic(earth2, earth3, k_coeff);
+
+  earth = sminCubic(earth, earth2, k_coeff);
+  earth = sminCubic(earth, earth4, k_coeff);
+
+  float moon = SphereSDF(pos, moonRadius, moonPos);
+  float crater1 = SphereSDF(pos, moonCraterRadius, moonPos + vec3(moonRadius / 2.0));
+  moon = opSubtraction(crater1, moon);
+
 	
-  return min(sun, min(c0, min(c1, c2)));
+  return min(moon, min(earth, min(sun, min(c0, min(c1, c2)))));
 }
 
 float SceneSDF(in vec3 pos, out int objHit) {
@@ -124,7 +153,23 @@ float SceneSDF(in vec3 pos, out int objHit) {
   float c1 = opSmoothSubtraction(s2, s3, k_coeff);
   float c2 = sminCubic(s4, s5, k_coeff);
 
-  float sun = SphereSDF(pos, 0.5, sunPos);
+  float sun = SphereSDF(pos, sunRadius, sunPos);
+
+  float earth = SphereSDF(pos, earthRadius, earthPos - earthOffset.yxx);
+  float earth1 = SphereSDF(pos, earthRadius, earthPos + earthOffset.yxx);
+  float earth2 = SphereSDF(pos, earthRadius, earthPos + earthOffset.xyx);
+  float earth3 = SphereSDF(pos, earthRadius, earthPos + earthOffset.xxy);
+  float earth4 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xyx);
+
+  earth = sminCubic(earth, earth1, k_coeff);
+  earth2 = sminCubic(earth2, earth3, k_coeff);
+
+  earth = sminCubic(earth, earth2, k_coeff);
+  earth = sminCubic(earth, earth4, k_coeff);
+
+  float moon = SphereSDF(pos, moonRadius, moonPos);
+  float crater1 = SphereSDF(pos, moonCraterRadius, moonPos + vec3(moonRadius / 2.0));
+  moon = opSubtraction(crater1, moon);
 	
   float t = c0;
   objHit = 0;
@@ -141,6 +186,14 @@ float SceneSDF(in vec3 pos, out int objHit) {
     t = sun;
     objHit = 3;
   }
+  if (earth < t) {
+    t = earth;
+    objHit = 4;
+  }
+  if (moon < t) {
+    t = moon;
+    objHit = 5;
+  }
 
   return t;
 }
@@ -156,8 +209,24 @@ float ShadowSceneSDF(in vec3 pos) {
   float c0 = opSmoothIntersection(s0, s1, k_coeff);
   float c1 = opSmoothSubtraction(s2, s3, k_coeff);
   float c2 = sminCubic(s4, s5, k_coeff);
+
+  float earth = SphereSDF(pos, earthRadius, earthPos - earthOffset.yxx);
+  float earth1 = SphereSDF(pos, earthRadius, earthPos + earthOffset.yxx);
+  float earth2 = SphereSDF(pos, earthRadius, earthPos + earthOffset.xyx);
+  float earth3 = SphereSDF(pos, earthRadius, earthPos + earthOffset.xxy);
+  float earth4 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xyx);
+
+  earth = sminCubic(earth, earth1, k_coeff);
+  earth2 = sminCubic(earth2, earth3, k_coeff);
+
+  earth = sminCubic(earth, earth2, k_coeff);
+  earth = sminCubic(earth, earth4, k_coeff);
+
+  float moon = SphereSDF(pos, moonRadius, moonPos);
+  float crater1 = SphereSDF(pos, moonCraterRadius, moonPos + vec3(moonRadius / 2.0));
+  moon = opSubtraction(crater1, moon);
 	
-  return min(c0, min(c1, c2));
+  return min(moon, min(earth, min(c0, min(c1, c2))));
 }
 
 float ShadowSceneSDF(in vec3 pos, out int objHit) {
@@ -171,6 +240,22 @@ float ShadowSceneSDF(in vec3 pos, out int objHit) {
   float c0 = opSmoothIntersection(s0, s1, k_coeff);
   float c1 = opSmoothSubtraction(s2, s3, k_coeff);
   float c2 = sminCubic(s4, s5, k_coeff);
+
+  float earth = SphereSDF(pos, earthRadius, earthPos - earthOffset.yxx);
+  float earth1 = SphereSDF(pos, earthRadius, earthPos + earthOffset.yxx);
+  float earth2 = SphereSDF(pos, earthRadius, earthPos + earthOffset.xyx);
+  float earth3 = SphereSDF(pos, earthRadius, earthPos + earthOffset.xxy);
+  float earth4 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xyx);
+
+  earth = sminCubic(earth, earth1, k_coeff);
+  earth2 = sminCubic(earth2, earth3, k_coeff);
+
+  earth = sminCubic(earth, earth2, k_coeff);
+  earth = sminCubic(earth, earth4, k_coeff);
+
+  float moon = SphereSDF(pos, moonRadius, moonPos);
+  float crater1 = SphereSDF(pos, moonCraterRadius, moonPos + vec3(moonRadius / 2.0));
+  moon = opSubtraction(crater1, moon);
 	
   float t = c0;
   objHit = 0;
@@ -183,63 +268,17 @@ float ShadowSceneSDF(in vec3 pos, out int objHit) {
     t = c2;
     objHit = 2;
   }
+  if (earth < t) {
+    t = earth;
+    objHit = 4;
+  }
+  if (moon < t) {
+    t = moon;
+    objHit = 5;
+  }
 
   return t;
 }
-
-// float SceneSDF(in vec3 pos) {
-//   float t = SphereSDF(pos, 0.5, spheres[0]);
-//   for (int i = 1; i < spheres.length(); i++) {
-//     t = min(t, SphereSDF(pos, 0.5, spheres[i]));
-//   }
-//   return t;
-// }
-
-// float SceneSDF(in vec3 pos, out int objHit) {
-  
-//   float t = SphereSDF(pos, 0.5, spheres[0]);
-//   objHit = 0;
-
-//   for (int i = 1; i < spheres.length(); i++) {
-//     float temp = SphereSDF(pos, 0.5, spheres[i]);
-//     if (temp < t) {
-//       t = temp;
-//       objHit = i;
-//     }
-//   }
-//   return t;
-// }
-
-// float SceneSDF(in vec3 pos) {
-//   float t = min(SphereSDF(pos, 0.5, center_sphere), SphereSDF(pos, 0.5, right_sphere));
-//   t = min(t, SphereSDF(pos, 0.5, left_sphere));
-//   return min(t, SphereSDF(pos, 0.5, up_sphere));
-// }
-
-// float SceneSDF(in vec3 pos, out int objHit) {
-//   float s0 = SphereSDF(pos, 0.5, center_sphere);
-//   float s1 = SphereSDF(pos, 0.5, right_sphere);
-//   float s2 = SphereSDF(pos, 0.5, left_sphere);
-//   float s3 = SphereSDF(pos, 0.5, up_sphere);
-	
-//   float t = s0;
-//   objHit = 0;
-
-//   if (s1 < t) {
-//     t = s1;
-//     objHit = 1;
-//   }
-//   if (s2 < t) {
-//     t = s2;
-//     objHit = 2;
-//   }
-//   if (s3 < t) {
-//     t = s3;
-//     objHit = 3;
-//   }
-
-//   return t;
-// }
 
 float RayMarch(in vec3 eye, in vec3 viewRayDirection, out int objHit) {
   float marchedDist = 0.0;
@@ -288,19 +327,19 @@ float StarsRayMarch(in vec3 eye, in vec3 viewRayDirection) {
   return -1.0;
 }
 
-bool ShadowTest(vec3 p) {
+bool ShadowTest(vec3 p, vec3 lightPos) {
 
   bool returnVal = false;
 
-  vec3 rayDirection = normalize(vec3(0.0, 0.0, 0.0) - p);
-  float lengthBetweenPointAndLight = length(vec3(0.0, 0.0, 0.0) - p);
+  vec3 rayDirection = normalize(lightPos - p);
+  float lengthBetweenPointAndLight = length(lightPos - p);
 
-  vec3 shadowRayayOrigin = p + rayDirection;
-  vec3 shadowRayayDirection = rayDirection;
+  vec3 shadowRayOrigin = p + rayDirection;
+  vec3 shadowRayDirection = rayDirection;
 
   int objHit = -1;
   float t = -1.0;
-  t = RayMarchShadow(shadowRayayOrigin, shadowRayayDirection, objHit);
+  t = RayMarchShadow(shadowRayOrigin, shadowRayDirection, objHit);
 
   if (objHit != -1) {
     if (t < lengthBetweenPointAndLight) {
@@ -323,10 +362,15 @@ vec3 ComputeColor(vec3 p, vec3 n, int objHit) {
     color = vec3(0.0, 0.0, 1.0);
   }
   else if (objHit == 3) {
-    float a = u_Time * 3.14159 * 0.001;
-    p = rotateX(p, a);
+    p = rotateX(p, u_Time * .00314159);
     float weight = random1o3i(p);
     return mix(vec3(1.0, 167.0/255.0, 0.0), vec3(1.0, 77.0/255.0, 0.0), weight);
+  }
+  else if (objHit == 4) {
+    color = vec3(0.0, 119.0/255.0, 190.0/255.0);
+  }
+  else if (objHit == 5) {
+    color = vec3(81.0/255.0, 84.0/255.0, 87.0/255.0);
   }
   else {
     return vec3(0.0, 0.0, 0.0);
@@ -336,22 +380,31 @@ vec3 ComputeColor(vec3 p, vec3 n, int objHit) {
 
   float ambientTerm = 0.2;
 
-  if(!ShadowTest(p)) {
+  vec3 sunPosTmp = sunPos;
+  vec2 offset = vec2(0.0, sunRadius / 2.0);
 
-    vec3 lightVec = normalize(vec3(0.0, 0.0, 0.0) - p);
+  vec3 lights[6] = vec3[6](vec3(sunPos + offset.yxx), vec3(sunPos - offset.yxx),
+                           vec3(sunPos + offset.xyx), vec3(sunPos - offset.xyx),
+                           vec3(sunPos + offset.xxy), vec3(sunPos - offset.xxy));
 
-    // Calculate the diffuse term for Lambert shading
-    float diffuseTerm = clamp(dot(n, lightVec), 0.0, 1.0);    // Avoid negative lighting values with clamp
+  for (int i = 0; i < 6; i++) {
+    sunPosTmp = lights[i];
+    if(!ShadowTest(p, sunPosTmp)) {
+      vec3 lightVec = normalize(sunPos - p);
 
-    float lightIntensity = diffuseTerm + ambientTerm;   //Add a small float value to the color multiplier
-                                                        //to simulate ambient lighting. This ensures that faces that are not
-                                                        //lit by our point light are not completely black.
+      // Calculate the diffuse term for Lambert shading
+      float diffuseTerm = clamp(dot(n, lightVec), 0.0, 1.0);    // Avoid negative lighting values with clamp
 
-    sumLightColors += vec3(1.0, 1.0, 1.0) * lightIntensity;
+      float lightIntensity = diffuseTerm + ambientTerm;   //Add a small float value to the color multiplier
+                                                          //to simulate ambient lighting. This ensures that faces that are not
+                                                          //lit by our point light are not completely black.
+
+      sumLightColors += sunHueAndIntensity * lightIntensity;
+    }
   }
-  else {
-    sumLightColors += vec3(1.0, 1.0, 1.0) * ambientTerm;
-  }
+  sumLightColors /= 6.0;
+
+  sumLightColors = clamp(sumLightColors, ambientTerm, 10.0);
 
   return color * sumLightColors;
 }
@@ -421,6 +474,13 @@ void main() {
   // l3 = rotateX(l3, rotation);
   // l4 = rotateZ(l4, rotation);
   // l5 = rotateZ(l5, rotation);
+
+  // earthPos = rotateY(earthPos, rotation);
+  // earthPos.y = earthPos.y + cos(rotation);
+
+  // moonPos = rotateY(moonPos, rotation1);
+  // moonPos.y = moonPos.y + cos(rotation1);
+  // moonPos += earthPos;
 
 
   vec3 rayOrigin;
