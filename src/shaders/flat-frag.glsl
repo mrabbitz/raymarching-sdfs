@@ -102,11 +102,11 @@ float SceneSDF(in vec3 pos) {
 
   float sun = SphereSDF(pos, sunRadius, sunPos);
 
-  float earth = SphereSDF(pos, earthRadius, earthPos - earthOffset.yxx);
-  float earth1 = SphereSDF(pos, earthRadius, earthPos + earthOffset.yxx);
-  float earth2 = SphereSDF(pos, earthRadius, earthPos + earthOffset.xyx);
-  float earth3 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xxy);
-  float earth4 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xyx);
+  float earth = SphereSDF(pos, earthRadius, earthPos - earthOffset.yxx * .5);
+  float earth1 = SphereSDF(pos, earthRadius, earthPos + earthOffset.yyx * .3);
+  float earth2 = SphereSDF(pos, earthRadius, earthPos + earthOffset.xyx * .7);
+  float earth3 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xyy * .5);
+  float earth4 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xyx * .7);
 
   earth = sminCubic(earth, earth1, k_coeff);
   earth2 = sminCubic(earth2, earth3, k_coeff);
@@ -126,11 +126,11 @@ float SceneSDF(in vec3 pos, out int objHit) {
 
   float sun = SphereSDF(pos, sunRadius, sunPos);
 
-  float earth = SphereSDF(pos, earthRadius, earthPos - earthOffset.yxx);
-  float earth1 = SphereSDF(pos, earthRadius, earthPos + earthOffset.yxx);
-  float earth2 = SphereSDF(pos, earthRadius, earthPos + earthOffset.xyx);
-  float earth3 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xxy);
-  float earth4 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xyx);
+  float earth = SphereSDF(pos, earthRadius, earthPos - earthOffset.yxx * .5);
+  float earth1 = SphereSDF(pos, earthRadius, earthPos + earthOffset.yyx * .3);
+  float earth2 = SphereSDF(pos, earthRadius, earthPos + earthOffset.xyx * .7);
+  float earth3 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xyy * .5);
+  float earth4 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xyx * .7);
 
   earth = sminCubic(earth, earth1, k_coeff);
   earth2 = sminCubic(earth2, earth3, k_coeff);
@@ -159,11 +159,11 @@ float SceneSDF(in vec3 pos, out int objHit) {
 
 float ShadowSceneSDF(in vec3 pos) {
 
-  float earth = SphereSDF(pos, earthRadius, earthPos - earthOffset.yxx);
-  float earth1 = SphereSDF(pos, earthRadius, earthPos + earthOffset.yxx);
-  float earth2 = SphereSDF(pos, earthRadius, earthPos + earthOffset.xyx);
-  float earth3 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xxy);
-  float earth4 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xyx);
+  float earth = SphereSDF(pos, earthRadius, earthPos - earthOffset.yxx * .5);
+  float earth1 = SphereSDF(pos, earthRadius, earthPos + earthOffset.yyx * .3);
+  float earth2 = SphereSDF(pos, earthRadius, earthPos + earthOffset.xyx * .7);
+  float earth3 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xyy * .5);
+  float earth4 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xyx * .7);
 
   earth = sminCubic(earth, earth1, k_coeff);
   earth2 = sminCubic(earth2, earth3, k_coeff);
@@ -180,11 +180,11 @@ float ShadowSceneSDF(in vec3 pos) {
 
 float ShadowSceneSDF(in vec3 pos, out int objHit) {
 
-  float earth = SphereSDF(pos, earthRadius, earthPos - earthOffset.yxx);
-  float earth1 = SphereSDF(pos, earthRadius, earthPos + earthOffset.yxx);
-  float earth2 = SphereSDF(pos, earthRadius, earthPos + earthOffset.xyx);
-  float earth3 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xxy);
-  float earth4 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xyx);
+  float earth = SphereSDF(pos, earthRadius, earthPos - earthOffset.yxx * .5);
+  float earth1 = SphereSDF(pos, earthRadius, earthPos + earthOffset.yyx * .3);
+  float earth2 = SphereSDF(pos, earthRadius, earthPos + earthOffset.xyx * .7);
+  float earth3 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xyy * .5);
+  float earth4 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xyx * .7);
 
   earth = sminCubic(earth, earth1, k_coeff);
   earth2 = sminCubic(earth2, earth3, k_coeff);
@@ -279,15 +279,23 @@ bool ShadowTest(vec3 p, vec3 lightPos) {
 
 vec3 ComputeColor(vec3 p, vec3 n, int objHit) {
   vec3 color;
-  if (objHit == 3) {
+  if (objHit == 3) {      // sun
     p = rotateX(p, u_Time * .00314159);
     float weight = random1o3i(p);
     return mix(vec3(1.0, 167.0/255.0, 0.0), vec3(1.0, 77.0/255.0, 0.0), weight);
   }
-  else if (objHit == 4) {
-    color = vec3(0.0, 119.0/255.0, 190.0/255.0);
+  else if (objHit == 4) { // earth
+    if (abs(p.y) > 0.5) {
+      color = vec3(1.0, 1.0, 1.0);
+    }
+    else if (abs(p.z - earthPos.z) > 0.5 || abs(p.x - earthPos.x) > 0.5) {
+      color = vec3(0.0, 1.0, 0.0);
+    }
+    else {
+      color = vec3(0.0, 119.0/255.0, 190.0/255.0);
+    }
   }
-  else if (objHit == 5) {
+  else if (objHit == 5) { // moon
     color = vec3(81.0/255.0, 84.0/255.0, 87.0/255.0);
   }
   else {
@@ -400,10 +408,10 @@ void main() {
   float earthRot = u_Time * 3.14159 * 0.01;
   float moonRot = earthRot * 5.0;
 
-  earthPos = rotateY(earthPos, earthRot);
+  //earthPos = rotateY(earthPos, earthRot);
   //earthPos.y = earthPos.y + cos(earthRot);
 
-  moonPos = rotateY(moonPos, moonRot);
+  //moonPos = rotateY(moonPos, moonRot);
   //moonPos.y = moonPos.y + cos(moonRot);
   moonPos += earthPos;
 
