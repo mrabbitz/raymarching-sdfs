@@ -14,14 +14,14 @@ const float EPSILON = 0.001;
 
 const float k_coeff = 0.1;
 
-const vec3 l0 = vec3(2.0, 0.0, 0.0);
-const vec3 l1 = vec3(2.0, 0.5, 0.0);
-const vec3 l2 = vec3(0.0, 0.0, 0.0);
-const vec3 l3 = vec3(0.0, 0.5, 0.0);
-const vec3 l4 = vec3(-2.0, 0.0, 0.0);
-const vec3 l5 = vec3(-2.0, 0.5, 0.0);
+vec3 l0 = vec3(2.0, 0.0, 0.0);
+vec3 l1 = vec3(2.0, 0.5, 0.0);
+vec3 l2 = vec3(0.0, 0.0, 0.0);
+vec3 l3 = vec3(0.0, 0.5, 0.0);
+vec3 l4 = vec3(-2.0, 0.0, 0.0);
+vec3 l5 = vec3(-2.0, 0.5, 0.0);
 
-const vec3 spheres[6] = vec3[6](l0, l1, l2, l3, l4, l5);
+//const vec3 spheres[6] = vec3[6](l0, l1, l2, l3, l4, l5);
 
 struct Intersection {
     vec3 p;
@@ -184,8 +184,35 @@ float RayMarch(in vec3 eye, in vec3 viewRayDirection, out int objHit) {
   return -1.0;
 }
 
-vec3 ComputeNormal(vec3 pos)
-{
+vec3 ComputeColor(vec3 p, vec3 n, int objHit) {
+  vec3 color;
+  if (objHit == 0) {
+    color = vec3(1.0, 0.0, 0.0);
+  }
+  else if (objHit == 1) {
+    color = vec3(0.0, 1.0, 0.0);
+  }
+  else if (objHit == 2) {
+    color = vec3(0.0, 0.0, 1.0);
+  }
+  else {
+    return vec3(0.0, 0.0, 0.0);
+  }
+
+  vec3 sumLightColors = vec3(0.0);
+
+  vec3 lightVec = normalize(vec3(0.0, 0.0, -10.0) - p);
+
+  // Calculate the diffuse term for Lambert shading
+  float diffuseTerm = clamp(dot(n, lightVec), 0.0, 1.0);    // Avoid negative lighting values with clamp
+
+  sumLightColors += vec3(1.0, 1.0, 1.0) * diffuseTerm;
+
+  return color * sumLightColors;
+}
+
+
+vec3 ComputeNormal(vec3 pos) {
     vec2 offset = vec2(0.0, 0.001);
     return normalize( vec3( SceneSDF(pos + offset.yxx) - SceneSDF(pos - offset.yxx),
                             SceneSDF(pos + offset.xyx) - SceneSDF(pos - offset.xyx),
@@ -235,11 +262,12 @@ void main() {
   float rotation1 = rotation * 1.5;
   float rotation2 = rotation / 1.5;
 
-
-  //center_sphere = rotateZ(center_sphere, rotation);
-  //right_sphere = rotateZ(right_sphere, rotation2);
-  //left_sphere = rotateZ(left_sphere, rotation1);
-  //up_sphere = rotateZ(up_sphere, rotation);
+  l0 = rotateY(l0, rotation);
+  l1 = rotateY(l1, rotation);
+  l2 = rotateX(l2, rotation);
+  l3 = rotateX(l3, rotation);
+  l4 = rotateZ(l4, rotation);
+  l5 = rotateZ(l5, rotation);
 
 
   vec3 rayOrigin;
@@ -250,8 +278,10 @@ void main() {
 
   if (intersection.objHit != -1)
   {
-    vec3 vectorOfOnes = vec3(1.0);
-    out_Col = vec4((intersection.normal + vectorOfOnes) * 0.5, 1.0);
+    // vec3 vectorOfOnes = vec3(1.0);
+    // out_Col = vec4((intersection.normal + vectorOfOnes) * 0.5, 1.0);
+
+    out_Col = vec4(ComputeColor(intersection.p, intersection.normal, intersection.objHit), 1.0);
   }
   else
   {
