@@ -16,12 +16,14 @@ const float k_coeff = 0.1;
 
 vec3 l0 = vec3(-3.0, 0.0, 0.0);
 vec3 l1 = vec3(-3.0, 0.5, 0.0);
-vec3 l2 = vec3(0.0, 0.0, 0.0);
-vec3 l3 = vec3(0.0, 0.5, 0.0);
+vec3 l2 = vec3(2.0, 0.0, 0.0);
+vec3 l3 = vec3(2.0, 0.5, 0.0);
 vec3 l4 = vec3(-2.0, 0.0, 0.0);
 vec3 l5 = vec3(-2.0, 0.5, 0.0);
 
 //const vec3 spheres[6] = vec3[6](l0, l1, l2, l3, l4, l5);
+
+vec3 sunPos = vec3(0.0, 0.0, 0.0);
 
 struct Intersection {
     vec3 p;
@@ -83,11 +85,61 @@ float SceneSDF(in vec3 pos) {
   float c0 = opSmoothIntersection(s0, s1, k_coeff);
   float c1 = opSmoothSubtraction(s2, s3, k_coeff);
   float c2 = sminCubic(s4, s5, k_coeff);
+
+  float sun = SphereSDF(pos, 0.5, sunPos);
+	
+  return min(sun, min(c0, min(c1, c2)));
+}
+
+float SceneSDF(in vec3 pos, out int objHit) {
+  float s0 = SphereSDF(pos, 0.5, l0);
+  float s1 = SphereSDF(pos, 0.5, l1);
+  float s2 = SphereSDF(pos, 0.5, l2);
+  float s3 = SphereSDF(pos, 0.5, l3);
+  float s4 = SphereSDF(pos, 0.5, l4);
+  float s5 = SphereSDF(pos, 0.5, l5);
+
+  float c0 = opSmoothIntersection(s0, s1, k_coeff);
+  float c1 = opSmoothSubtraction(s2, s3, k_coeff);
+  float c2 = sminCubic(s4, s5, k_coeff);
+
+  float sun = SphereSDF(pos, 0.5, sunPos);
+	
+  float t = c0;
+  objHit = 0;
+
+  if (c1 < t) {
+    t = c1;
+    objHit = 1;
+  }
+  if (c2 < t) {
+    t = c2;
+    objHit = 2;
+  }
+  if (sun < t) {
+    t = sun;
+    objHit = 3;
+  }
+
+  return t;
+}
+
+float ShadowSceneSDF(in vec3 pos) {
+  float s0 = SphereSDF(pos, 0.5, l0);
+  float s1 = SphereSDF(pos, 0.5, l1);
+  float s2 = SphereSDF(pos, 0.5, l2);
+  float s3 = SphereSDF(pos, 0.5, l3);
+  float s4 = SphereSDF(pos, 0.5, l4);
+  float s5 = SphereSDF(pos, 0.5, l5);
+
+  float c0 = opSmoothIntersection(s0, s1, k_coeff);
+  float c1 = opSmoothSubtraction(s2, s3, k_coeff);
+  float c2 = sminCubic(s4, s5, k_coeff);
 	
   return min(c0, min(c1, c2));
 }
 
-float SceneSDF(in vec3 pos, out int objHit) {
+float ShadowSceneSDF(in vec3 pos, out int objHit) {
   float s0 = SphereSDF(pos, 0.5, l0);
   float s1 = SphereSDF(pos, 0.5, l1);
   float s2 = SphereSDF(pos, 0.5, l2);
@@ -184,6 +236,22 @@ float RayMarch(in vec3 eye, in vec3 viewRayDirection, out int objHit) {
   return -1.0;
 }
 
+float RayMarchShadow(in vec3 eye, in vec3 viewRayDirection, out int objHit) {
+  float marchedDist = 0.0;
+  float minDist = 0.0;
+  for (int i = 0; i < MAX_MARCHING_STEPS; i++) {
+      minDist = ShadowSceneSDF(eye + marchedDist * viewRayDirection, objHit);
+      if (minDist < EPSILON) {
+          // We're inside the scene surface!
+          return marchedDist;
+      }
+      // Move along the view ray
+      marchedDist += minDist;
+  }
+  objHit = -1;
+  return -1.0;
+}
+
 float StarsRayMarch(in vec3 eye, in vec3 viewRayDirection) {
   float marchedDist = 0.0;
   float minDist = 0.0;
@@ -211,7 +279,7 @@ bool ShadowTest(vec3 p) {
 
   int objHit = -1;
   float t = -1.0;
-  t = RayMarch(shadowRayayOrigin, shadowRayayDirection, objHit);
+  t = RayMarchShadow(shadowRayayOrigin, shadowRayayDirection, objHit);
 
   if (objHit != -1) {
     if (t < lengthBetweenPointAndLight) {
@@ -228,10 +296,13 @@ vec3 ComputeColor(vec3 p, vec3 n, int objHit) {
     color = vec3(1.0, 0.0, 0.0);
   }
   else if (objHit == 1) {
-    return vec3(1.0, 77.0/255.0, 0.0);
+    color = vec3(0.0, 1.0, 0.0);
   }
   else if (objHit == 2) {
     color = vec3(0.0, 0.0, 1.0);
+  }
+  else if (objHit == 3) {
+    return vec3(1.0, 77.0/255.0, 0.0);
   }
   else {
     return vec3(0.0, 0.0, 0.0);
@@ -334,12 +405,12 @@ void main() {
   float rotation1 = rotation * 1.5;
   float rotation2 = rotation / 1.5;
 
-  // l0 = rotateY(l0, rotation);
-  // l1 = rotateY(l1, rotation);
-  // l2 = rotateX(l2, rotation);
-  // l3 = rotateX(l3, rotation);
-  // l4 = rotateZ(l4, rotation);
-  // l5 = rotateZ(l5, rotation);
+  l0 = rotateY(l0, rotation);
+  l1 = rotateY(l1, rotation);
+  l2 = rotateX(l2, rotation);
+  l3 = rotateX(l3, rotation);
+  l4 = rotateZ(l4, rotation);
+  l5 = rotateZ(l5, rotation);
 
 
   vec3 rayOrigin;
