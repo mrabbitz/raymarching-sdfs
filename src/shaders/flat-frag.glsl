@@ -19,12 +19,12 @@ float sunRadius = 2.0;
 
 vec3 sunHueAndIntensity = vec3(2.0, 2.0, 2.0);
 
-vec3 earthPos = vec3(-3.5, 0.0, 0.0);
+vec3 earthPos = vec3(-5.0, 0.0, 0.0);
 float earthRadius = 0.5;
 
 vec2 earthOffset = vec2(0.0, 0.2);
 
-vec3 moonPos = vec3(-1, 0.0, 0.0);
+vec3 moonPos = vec3(-2.0, 0.0, 0.0);
 float moonRadius = 0.3;
 float moonCraterRadius = 0.1;
 
@@ -298,31 +298,46 @@ vec3 ComputeColor(vec3 p, vec3 n, int objHit) {
 
   float ambientTerm = 0.2;
 
-  vec3 sunPosTmp = sunPos;
-  vec2 offset = vec2(0.0, sunRadius);
+  // vec3 sunPosTmp = sunPos;
+  // vec2 offset = vec2(0.0, sunRadius);
 
-  vec3 lights[6] = vec3[6](vec3(sunPos + offset.yxx), vec3(sunPos - offset.yxx),
-                           vec3(sunPos + offset.xyx), vec3(sunPos - offset.xyx),
-                           vec3(sunPos + offset.xxy), vec3(sunPos - offset.xxy));
+  // vec3 lights[6] = vec3[6](vec3(sunPos + offset.yxx), vec3(sunPos - offset.yxx),
+  //                          vec3(sunPos + offset.xyx), vec3(sunPos - offset.xyx),
+  //                          vec3(sunPos + offset.xxy), vec3(sunPos - offset.xxy));
 
-  for (int i = 0; i < 6; i++) {
-    sunPosTmp = lights[i];
-    if(!ShadowTest(p, sunPosTmp)) {
-      vec3 lightVec = normalize(sunPosTmp - p);
+  // for (int i = 0; i < 6; i++) {
+  //   sunPosTmp = lights[i];
+  //   if(!ShadowTest(p, sunPosTmp)) {
+  //     vec3 lightVec = normalize(sunPosTmp - p);
 
-      // Calculate the diffuse term for Lambert shading
-      float diffuseTerm = clamp(dot(n, lightVec), 0.0, 1.0);    // Avoid negative lighting values with clamp
+  //     // Calculate the diffuse term for Lambert shading
+  //     float diffuseTerm = clamp(dot(n, lightVec), 0.0, 1.0);    // Avoid negative lighting values with clamp
 
-      float lightIntensity = diffuseTerm + ambientTerm * .5;    //Add a small float value to the color multiplier
-                                                                //to simulate ambient lighting. This ensures that faces that are not
-                                                                //lit by our point light are not completely black.
+  //     float lightIntensity = diffuseTerm + ambientTerm * .5;    //Add a small float value to the color multiplier
+  //                                                               //to simulate ambient lighting. This ensures that faces that are not
+  //                                                               //lit by our point light are not completely black.
 
-      sumLightColors += sunHueAndIntensity * lightIntensity;
-    }
+  //     sumLightColors += sunHueAndIntensity * lightIntensity;
+  //   }
+  // }
+  // sumLightColors /= 6.0;
+
+  // sumLightColors = clamp(sumLightColors, ambientTerm, 10.0);
+
+  if(!ShadowTest(p, sunPos)) {
+
+    vec3 lightVec = normalize(sunPos - p);
+
+    // Calculate the diffuse term for Lambert shading
+    float diffuseTerm = clamp(dot(n, lightVec), 0.0, 1.0);    // Avoid negative lighting values with clamp
+
+    float lightIntensity = diffuseTerm + ambientTerm;   //Add a small float value to the color multiplier
+                                                        //to simulate ambient lighting. This ensures that faces that are not
+                                                        //lit by our point light are not completely black.
+
+    sumLightColors += sunHueAndIntensity * lightIntensity;
   }
-  sumLightColors /= 6.0;
-
-  sumLightColors = clamp(sumLightColors, ambientTerm, 10.0);
+  sumLightColors = clamp(sumLightColors, ambientTerm * 2.0, 10.0);
 
   return color * sumLightColors;
 }
@@ -382,15 +397,14 @@ void RayCast(out vec3 origin, out vec3 direction, in float foyY) {
 
 void main() {
 
-  float rotation = u_Time * 3.14159 * 0.01;
-  float rotation1 = rotation * 1.5;
-  float rotation2 = rotation / 1.5;
+  float earthRot = u_Time * 3.14159 * 0.01;
+  float moonRot = earthRot * 5.0;
 
-  // earthPos = rotateY(earthPos, rotation);
-  // earthPos.y = earthPos.y + cos(rotation);
+  earthPos = rotateY(earthPos, earthRot);
+  //earthPos.y = earthPos.y + cos(earthRot);
 
-  // moonPos = rotateY(moonPos, rotation1);
-  // moonPos.y = moonPos.y + cos(rotation1);
+  moonPos = rotateY(moonPos, moonRot);
+  //moonPos.y = moonPos.y + cos(moonRot);
   moonPos += earthPos;
 
 
