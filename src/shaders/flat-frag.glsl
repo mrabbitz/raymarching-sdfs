@@ -105,7 +105,7 @@ float SceneSDF(in vec3 pos) {
   float earth = SphereSDF(pos, earthRadius, earthPos - earthOffset.yxx);
   float earth1 = SphereSDF(pos, earthRadius, earthPos + earthOffset.yxx);
   float earth2 = SphereSDF(pos, earthRadius, earthPos + earthOffset.xyx);
-  float earth3 = SphereSDF(pos, earthRadius, earthPos + earthOffset.xxy);
+  float earth3 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xxy);
   float earth4 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xyx);
 
   earth = sminCubic(earth, earth1, k_coeff);
@@ -129,7 +129,7 @@ float SceneSDF(in vec3 pos, out int objHit) {
   float earth = SphereSDF(pos, earthRadius, earthPos - earthOffset.yxx);
   float earth1 = SphereSDF(pos, earthRadius, earthPos + earthOffset.yxx);
   float earth2 = SphereSDF(pos, earthRadius, earthPos + earthOffset.xyx);
-  float earth3 = SphereSDF(pos, earthRadius, earthPos + earthOffset.xxy);
+  float earth3 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xxy);
   float earth4 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xyx);
 
   earth = sminCubic(earth, earth1, k_coeff);
@@ -162,7 +162,7 @@ float ShadowSceneSDF(in vec3 pos) {
   float earth = SphereSDF(pos, earthRadius, earthPos - earthOffset.yxx);
   float earth1 = SphereSDF(pos, earthRadius, earthPos + earthOffset.yxx);
   float earth2 = SphereSDF(pos, earthRadius, earthPos + earthOffset.xyx);
-  float earth3 = SphereSDF(pos, earthRadius, earthPos + earthOffset.xxy);
+  float earth3 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xxy);
   float earth4 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xyx);
 
   earth = sminCubic(earth, earth1, k_coeff);
@@ -183,7 +183,7 @@ float ShadowSceneSDF(in vec3 pos, out int objHit) {
   float earth = SphereSDF(pos, earthRadius, earthPos - earthOffset.yxx);
   float earth1 = SphereSDF(pos, earthRadius, earthPos + earthOffset.yxx);
   float earth2 = SphereSDF(pos, earthRadius, earthPos + earthOffset.xyx);
-  float earth3 = SphereSDF(pos, earthRadius, earthPos + earthOffset.xxy);
+  float earth3 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xxy);
   float earth4 = SphereSDF(pos, earthRadius, earthPos - earthOffset.xyx);
 
   earth = sminCubic(earth, earth1, k_coeff);
@@ -299,7 +299,7 @@ vec3 ComputeColor(vec3 p, vec3 n, int objHit) {
   float ambientTerm = 0.2;
 
   vec3 sunPosTmp = sunPos;
-  vec2 offset = vec2(0.0, sunRadius / 2.0);
+  vec2 offset = vec2(0.0, sunRadius);
 
   vec3 lights[6] = vec3[6](vec3(sunPos + offset.yxx), vec3(sunPos - offset.yxx),
                            vec3(sunPos + offset.xyx), vec3(sunPos - offset.xyx),
@@ -308,14 +308,14 @@ vec3 ComputeColor(vec3 p, vec3 n, int objHit) {
   for (int i = 0; i < 6; i++) {
     sunPosTmp = lights[i];
     if(!ShadowTest(p, sunPosTmp)) {
-      vec3 lightVec = normalize(sunPos - p);
+      vec3 lightVec = normalize(sunPosTmp - p);
 
       // Calculate the diffuse term for Lambert shading
       float diffuseTerm = clamp(dot(n, lightVec), 0.0, 1.0);    // Avoid negative lighting values with clamp
 
-      float lightIntensity = diffuseTerm + ambientTerm;   //Add a small float value to the color multiplier
-                                                          //to simulate ambient lighting. This ensures that faces that are not
-                                                          //lit by our point light are not completely black.
+      float lightIntensity = diffuseTerm + ambientTerm * .5;    //Add a small float value to the color multiplier
+                                                                //to simulate ambient lighting. This ensures that faces that are not
+                                                                //lit by our point light are not completely black.
 
       sumLightColors += sunHueAndIntensity * lightIntensity;
     }
