@@ -184,6 +184,21 @@ float RayMarch(in vec3 eye, in vec3 viewRayDirection, out int objHit) {
   return -1.0;
 }
 
+float StarsRayMarch(in vec3 eye, in vec3 viewRayDirection) {
+  float marchedDist = 0.0;
+  float minDist = 0.0;
+  for (int i = 0; i < MAX_MARCHING_STEPS; i++) {
+      minDist = -SphereSDF(eye + marchedDist * viewRayDirection, 100.0, vec3(0.0, 0.0, 0.0));
+      if (minDist < EPSILON) {
+          // We're inside the scene surface!
+          return marchedDist;
+      }
+      // Move along the view ray
+      marchedDist += minDist;
+  }
+  return -1.0;
+}
+
 bool ShadowTest(vec3 p) {
 
   bool returnVal = false;
@@ -273,6 +288,14 @@ Intersection SceneIntersection(in vec3 eye, in vec3 viewRayDirection) {
   }
 }
 
+vec3 StarsIntersection(in vec3 eye, in vec3 viewRayDirection) {
+  float t = -1.0;
+  t = StarsRayMarch(eye, viewRayDirection);
+
+  vec3 intersectPoint = eye + t * viewRayDirection;
+  return intersectPoint;
+}
+
 
 void RayCast(out vec3 origin, out vec3 direction, in float foyY) {
   vec3 Forward = normalize(u_Ref - u_Eye);
@@ -289,6 +312,20 @@ void RayCast(out vec3 origin, out vec3 direction, in float foyY) {
 
   origin = u_Eye;
   direction = normalize(p - u_Eye);
+}
+
+float random1o3i(vec3 p) {
+  return fract(sin(dot(p, vec3(127.1, 311.7, 191.999))) * 43758.5453);
+}
+
+float noise1D(float x) {
+    return fract((1.0 - float(x * (x * x * 15731.0 + 789221.0)
+            + 1376312589.0))
+            / 10737741824.0);
+}
+
+float random1o2i( vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
 }
 
 void main() {
@@ -311,18 +348,52 @@ void main() {
 
   Intersection intersection = SceneIntersection(rayOrigin, rayDirection);
 
-  if (intersection.objHit != -1)
-  {
-    // vec3 vectorOfOnes = vec3(1.0);
-    // out_Col = vec4((intersection.normal + vectorOfOnes) * 0.5, 1.0);
-
+  if (intersection.objHit != -1) {
     out_Col = vec4(ComputeColor(intersection.p, intersection.normal, intersection.objHit), 1.0);
   }
-  else
-  {
-    out_Col = vec4(0.0, 0.0, 0.0, 1.0);
-    //out_Col = vec4(vec3(0.5 * (rayDirection + vec3(1.0, 1.0, 1.0))), 1.0);
+  else {
+
+    float randomFract = random1o2i(fs_Pos) * 100.0;
+
+    if (randomFract < 0.1) {
+      out_Col = vec4(1.0, 1.0, 1.0, 1.0);
+    }
+    else {
+      out_Col = vec4(0.0, 0.0, 0.0, 1.0);
+    }
+
+    // vec3 point = StarsIntersection(rayOrigin, rayDirection);
+
+    // float a = fract(point.x);
+    // if (a > 0.7 && a < 0.8) {
+    //   float b = fract(point.y);
+    //   if (b > 0.2 && b < 0.3) {
+    //     float c = fract(point.z);
+    //     if (c > 0.5 && c < 0.6) {
+    //       c = ceil(c);
+    //     }
+    //     else {
+    //       out_Col = vec4(0.0, 0.0, 0.0, 1.0);
+    //     }
+    //   }
+    //   else {
+    //   out_Col = vec4(0.0, 0.0, 0.0, 1.0);
+    //   }
+    // }
+    // else{
+    //   out_Col = vec4(0.0, 0.0, 0.0, 1.0);
+    // }
+    
+    // //point = vec3(floor(point.x), floor(point.y), floor(point.z));
+    // float randomFract = random1o3i(point) * 1000000.0;
+    // // bool randomFract = (newPoint.x % 2 == 0) && (newPoint.x % 2 == 0) && (newPoint.x % 2 == 0);
+    // //if (newPoint.y > 10.0) {
+    // if (randomFract < 0.1) {
+    //   out_Col = vec4(1.0, 1.0, 1.0, 1.0);
+    // }
+    // else {
+    //   out_Col = vec4(0.0, 0.0, 0.0, 1.0);
+    // }
   }
 
-  //out_Col = vec4(0.5 * (fs_Pos + vec2(1.0)), 0.5 * (sin(u_Time * 3.14159 * 0.01) + 1.0), 1.0);
 }
