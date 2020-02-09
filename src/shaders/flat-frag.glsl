@@ -14,15 +14,6 @@ const float EPSILON = 0.001;
 
 const float k_coeff = 0.1;
 
-vec3 l0 = vec3(-6.0, 0.0, 0.0);
-vec3 l1 = vec3(-6.0, 0.5, 0.0);
-vec3 l2 = vec3(5.0, 0.0, 0.0);
-vec3 l3 = vec3(5.0, 0.5, 0.0);
-vec3 l4 = vec3(-5.0, 0.0, 0.0);
-vec3 l5 = vec3(-5.0, 0.5, 0.0);
-
-//const vec3 spheres[6] = vec3[6](l0, l1, l2, l3, l4, l5);
-
 vec3 sunPos = vec3(0.0, 0.0, 0.0);
 float sunRadius = 2.0;
 
@@ -108,16 +99,6 @@ float SphereSDF(vec3 p, float r, vec3 c) {
 }
 
 float SceneSDF(in vec3 pos) {
-  float s0 = SphereSDF(pos, 0.5, l0);
-  float s1 = SphereSDF(pos, 0.5, l1);
-  float s2 = SphereSDF(pos, 0.5, l2);
-  float s3 = SphereSDF(pos, 0.5, l3);
-  float s4 = SphereSDF(pos, 0.5, l4);
-  float s5 = SphereSDF(pos, 0.5, l5);
-
-  float c0 = opSmoothIntersection(s0, s1, k_coeff);
-  float c1 = opSmoothSubtraction(s2, s3, k_coeff);
-  float c2 = sminCubic(s4, s5, k_coeff);
 
   float sun = SphereSDF(pos, sunRadius, sunPos);
 
@@ -138,20 +119,10 @@ float SceneSDF(in vec3 pos) {
   moon = opSubtraction(crater1, moon);
 
 	
-  return min(moon, min(earth, min(sun, min(c0, min(c1, c2)))));
+  return min(moon, min(earth, sun));
 }
 
 float SceneSDF(in vec3 pos, out int objHit) {
-  float s0 = SphereSDF(pos, 0.5, l0);
-  float s1 = SphereSDF(pos, 0.5, l1);
-  float s2 = SphereSDF(pos, 0.5, l2);
-  float s3 = SphereSDF(pos, 0.5, l3);
-  float s4 = SphereSDF(pos, 0.5, l4);
-  float s5 = SphereSDF(pos, 0.5, l5);
-
-  float c0 = opSmoothIntersection(s0, s1, k_coeff);
-  float c1 = opSmoothSubtraction(s2, s3, k_coeff);
-  float c2 = sminCubic(s4, s5, k_coeff);
 
   float sun = SphereSDF(pos, sunRadius, sunPos);
 
@@ -171,21 +142,9 @@ float SceneSDF(in vec3 pos, out int objHit) {
   float crater1 = SphereSDF(pos, moonCraterRadius, moonPos + vec3(moonRadius / 2.0));
   moon = opSubtraction(crater1, moon);
 	
-  float t = c0;
-  objHit = 0;
+  float t = sun;
+  objHit = 3;
 
-  if (c1 < t) {
-    t = c1;
-    objHit = 1;
-  }
-  if (c2 < t) {
-    t = c2;
-    objHit = 2;
-  }
-  if (sun < t) {
-    t = sun;
-    objHit = 3;
-  }
   if (earth < t) {
     t = earth;
     objHit = 4;
@@ -199,16 +158,6 @@ float SceneSDF(in vec3 pos, out int objHit) {
 }
 
 float ShadowSceneSDF(in vec3 pos) {
-  float s0 = SphereSDF(pos, 0.5, l0);
-  float s1 = SphereSDF(pos, 0.5, l1);
-  float s2 = SphereSDF(pos, 0.5, l2);
-  float s3 = SphereSDF(pos, 0.5, l3);
-  float s4 = SphereSDF(pos, 0.5, l4);
-  float s5 = SphereSDF(pos, 0.5, l5);
-
-  float c0 = opSmoothIntersection(s0, s1, k_coeff);
-  float c1 = opSmoothSubtraction(s2, s3, k_coeff);
-  float c2 = sminCubic(s4, s5, k_coeff);
 
   float earth = SphereSDF(pos, earthRadius, earthPos - earthOffset.yxx);
   float earth1 = SphereSDF(pos, earthRadius, earthPos + earthOffset.yxx);
@@ -226,20 +175,10 @@ float ShadowSceneSDF(in vec3 pos) {
   float crater1 = SphereSDF(pos, moonCraterRadius, moonPos + vec3(moonRadius / 2.0));
   moon = opSubtraction(crater1, moon);
 	
-  return min(moon, min(earth, min(c0, min(c1, c2))));
+  return min(moon, earth);
 }
 
 float ShadowSceneSDF(in vec3 pos, out int objHit) {
-  float s0 = SphereSDF(pos, 0.5, l0);
-  float s1 = SphereSDF(pos, 0.5, l1);
-  float s2 = SphereSDF(pos, 0.5, l2);
-  float s3 = SphereSDF(pos, 0.5, l3);
-  float s4 = SphereSDF(pos, 0.5, l4);
-  float s5 = SphereSDF(pos, 0.5, l5);
-
-  float c0 = opSmoothIntersection(s0, s1, k_coeff);
-  float c1 = opSmoothSubtraction(s2, s3, k_coeff);
-  float c2 = sminCubic(s4, s5, k_coeff);
 
   float earth = SphereSDF(pos, earthRadius, earthPos - earthOffset.yxx);
   float earth1 = SphereSDF(pos, earthRadius, earthPos + earthOffset.yxx);
@@ -257,21 +196,9 @@ float ShadowSceneSDF(in vec3 pos, out int objHit) {
   float crater1 = SphereSDF(pos, moonCraterRadius, moonPos + vec3(moonRadius / 2.0));
   moon = opSubtraction(crater1, moon);
 	
-  float t = c0;
-  objHit = 0;
+  float t = earth;
+  objHit = 4;
 
-  if (c1 < t) {
-    t = c1;
-    objHit = 1;
-  }
-  if (c2 < t) {
-    t = c2;
-    objHit = 2;
-  }
-  if (earth < t) {
-    t = earth;
-    objHit = 4;
-  }
   if (moon < t) {
     t = moon;
     objHit = 5;
@@ -352,16 +279,7 @@ bool ShadowTest(vec3 p, vec3 lightPos) {
 
 vec3 ComputeColor(vec3 p, vec3 n, int objHit) {
   vec3 color;
-  if (objHit == 0) {
-    color = vec3(1.0, 0.0, 0.0);
-  }
-  else if (objHit == 1) {
-    color = vec3(0.0, 1.0, 0.0);
-  }
-  else if (objHit == 2) {
-    color = vec3(0.0, 0.0, 1.0);
-  }
-  else if (objHit == 3) {
+  if (objHit == 3) {
     p = rotateX(p, u_Time * .00314159);
     float weight = random1o3i(p);
     return mix(vec3(1.0, 167.0/255.0, 0.0), vec3(1.0, 77.0/255.0, 0.0), weight);
@@ -468,19 +386,12 @@ void main() {
   float rotation1 = rotation * 1.5;
   float rotation2 = rotation / 1.5;
 
-  // l0 = rotateY(l0, rotation);
-  // l1 = rotateY(l1, rotation);
-  // l2 = rotateX(l2, rotation);
-  // l3 = rotateX(l3, rotation);
-  // l4 = rotateZ(l4, rotation);
-  // l5 = rotateZ(l5, rotation);
-
   // earthPos = rotateY(earthPos, rotation);
   // earthPos.y = earthPos.y + cos(rotation);
 
   // moonPos = rotateY(moonPos, rotation1);
   // moonPos.y = moonPos.y + cos(rotation1);
-  // moonPos += earthPos;
+  moonPos += earthPos;
 
 
   vec3 rayOrigin;
