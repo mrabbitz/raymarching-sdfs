@@ -32,6 +32,27 @@ struct Intersection {
     int objHit;
 };
 
+float random1o3i(vec3 p) {
+  return fract(sin(dot(p, vec3(127.1, 311.7, 191.999))) * 43758.5453);
+}
+
+float noise1D(float x) {
+    return fract((1.0 - float(x * (x * x * 15731.0 + 789221.0)
+            + 1376312589.0))
+            / 10737741824.0);
+}
+
+float random1o2i( vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+vec3 random3o3i(vec3 p) {
+  return fract(sin(vec3(dot(p, vec3(127.1, 311.7, 191.999)),
+                        dot(p, vec3(269.5, 183.3, 765.54)),
+                        dot(p, vec3(420.69, 631.2, 109.21))))
+                        * 43758.5453);
+}
+
 vec3 rotateX(vec3 p, float a) {
     return vec3(p.x, cos(a) * p.y - sin(a) * p.z, sin(a) * p.y + cos(a) * p.z);
 }
@@ -302,7 +323,10 @@ vec3 ComputeColor(vec3 p, vec3 n, int objHit) {
     color = vec3(0.0, 0.0, 1.0);
   }
   else if (objHit == 3) {
-    return vec3(1.0, 77.0/255.0, 0.0);
+    float a = u_Time * 3.14159 * 0.001;
+    p = rotateX(p, a);
+    float weight = random1o3i(p);
+    return mix(vec3(1.0, 167.0/255.0, 0.0), vec3(1.0, 77.0/255.0, 0.0), weight);
   }
   else {
     return vec3(0.0, 0.0, 0.0);
@@ -385,32 +409,18 @@ void RayCast(out vec3 origin, out vec3 direction, in float foyY) {
   direction = normalize(p - u_Eye);
 }
 
-float random1o3i(vec3 p) {
-  return fract(sin(dot(p, vec3(127.1, 311.7, 191.999))) * 43758.5453);
-}
-
-float noise1D(float x) {
-    return fract((1.0 - float(x * (x * x * 15731.0 + 789221.0)
-            + 1376312589.0))
-            / 10737741824.0);
-}
-
-float random1o2i( vec2 p) {
-  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-}
-
 void main() {
 
   float rotation = u_Time * 3.14159 * 0.01;
   float rotation1 = rotation * 1.5;
   float rotation2 = rotation / 1.5;
 
-  l0 = rotateY(l0, rotation);
-  l1 = rotateY(l1, rotation);
-  l2 = rotateX(l2, rotation);
-  l3 = rotateX(l3, rotation);
-  l4 = rotateZ(l4, rotation);
-  l5 = rotateZ(l5, rotation);
+  // l0 = rotateY(l0, rotation);
+  // l1 = rotateY(l1, rotation);
+  // l2 = rotateX(l2, rotation);
+  // l3 = rotateX(l3, rotation);
+  // l4 = rotateZ(l4, rotation);
+  // l5 = rotateZ(l5, rotation);
 
 
   vec3 rayOrigin;
