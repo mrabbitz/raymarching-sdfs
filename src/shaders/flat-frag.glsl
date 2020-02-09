@@ -224,6 +224,8 @@ vec3 ComputeColor(vec3 p, vec3 n, int objHit) {
 
   vec3 sumLightColors = vec3(0.0);
 
+  float ambientTerm = 0.2;
+
   if(!ShadowTest(p)) {
 
     vec3 lightVec = normalize(vec3(0.0, 0.0, 0.0) - p);
@@ -231,7 +233,14 @@ vec3 ComputeColor(vec3 p, vec3 n, int objHit) {
     // Calculate the diffuse term for Lambert shading
     float diffuseTerm = clamp(dot(n, lightVec), 0.0, 1.0);    // Avoid negative lighting values with clamp
 
-    sumLightColors += vec3(1.0, 1.0, 1.0) * diffuseTerm;
+    float lightIntensity = diffuseTerm + ambientTerm;   //Add a small float value to the color multiplier
+                                                        //to simulate ambient lighting. This ensures that faces that are not
+                                                        //lit by our point light are not completely black.
+
+    sumLightColors += vec3(1.0, 1.0, 1.0) * lightIntensity;
+  }
+  else {
+    sumLightColors += vec3(1.0, 1.0, 1.0) * ambientTerm;
   }
 
   return color * sumLightColors;
