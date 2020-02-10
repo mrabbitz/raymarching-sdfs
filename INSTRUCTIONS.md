@@ -20,7 +20,7 @@ Using a 3D Box SDF, a dynamic bounding box is used to bound the sun, earth, and 
 The width, height, and depth vectors (all originating from center of box with magnitude half of the respective width, height, or length) are based on the following logic.  We will use the outermost bounding box's width vector as the example:
 
 The X bound for the earth is its radius plus the absolute value of the difference between its X position and the sun's X position.
-The same goes for the X bound of the moon, plugging in the moon's radius and X position, respectively.
+The same goes for the X bound of the moon, substituting the moon's radius and X position, respectively.
 The X bound of the sun is it's radius.
 We then take the max value of these to determine the width vector of our bounding box.
 
