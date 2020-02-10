@@ -17,7 +17,7 @@
 
 Using a 3D Box SDF, a dynamic bounding box is used to bound the sun, earth, and moon.  There is a nested dynamic bounding box that bounds the earth and moon once inside our outermost bounding box.  Both hierarchys are used in the Scene ray-marching operations.  The nested hierarchy is individually used in the ShadowTest ray-marching operations.
 
-The width, height, and depth vectors (all originating from center of box with magnitude half of the respective width, height, or length vector) are based on the following logic.  We will use the outermost bounding box's width vector as the example:
+The width, height, and depth vectors (all originating from center of box with magnitude half of the respective width, height, or length) are based on the following logic.  We will use the outermost bounding box's width vector as the example:
 
 The X bound for the earth is its radius plus the absolute value of the difference between its X position and the sun's X position.
 The same goes for the X bound of the moon, plugging in the moon's radius and X position, respectively.
