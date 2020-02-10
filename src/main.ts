@@ -10,8 +10,17 @@ import ShaderProgram, {Shader} from './rendering/gl/ShaderProgram';
 // Define an object with application parameters and button callbacks
 // This will be referred to by dat.GUI's functions that add GUI elements.
 const controls = {
-  tesselations: 5,
-  'Load Scene': loadScene, // A function pointer, essentially
+  s_Radius: 2.0,
+  s_Intensity_R: 2.0,
+  s_Intensity_G: 2.0,
+  s_Intensity_B: 2.0,
+  e_Rotation_Speed: 10.0,
+  e_Dist_From_Sun: 5.0,
+  e_Radius: 0.5,
+  m_Rotation_Speed: 5.0,
+  m_Dist_From_Earth: 1.5,
+  m_Radius: 0.3,
+  m_Crater_Radius: 0.1
 };
 
 let square: Square;
@@ -46,7 +55,24 @@ function main() {
   document.body.appendChild(stats.domElement);
 
   // Add controls to the gui
-  const gui = new DAT.GUI();
+  const gui = new DAT.GUI( { width: 300 } );
+
+  var f1 = gui.addFolder('Sun');
+  f1.add(controls, 's_Radius', 1.0, 10.0).step(1.0);
+  f1.add(controls, 's_Intensity_R', 0.0, 4.0).step(0.25);
+  f1.add(controls, 's_Intensity_G', 0.0, 4.0).step(0.25);
+  f1.add(controls, 's_Intensity_B', 0.0, 4.0).step(0.25);
+
+  var f2 = gui.addFolder('Earth');
+  f2.add(controls, 'e_Rotation_Speed', -20.0, 20.0).step(1.0);
+  f2.add(controls, 'e_Dist_From_Sun', 1.0, 20.0).step(0.5);
+  f2.add(controls, 'e_Radius', 0.1, 1.5).step(0.1);
+
+  var f3 = gui.addFolder('Moon');
+  f3.add(controls, 'm_Rotation_Speed', -10.0, 10.0).step(1.0);
+  f3.add(controls, 'm_Dist_From_Earth', 1.0, 5.0).step(0.5);
+  f3.add(controls, 'm_Radius', 0.1, 1.0).step(0.1);
+  f3.add(controls, 'm_Crater_Radius', 0.0, 1.0).step(0.05);
 
   // get canvas and webgl context
   const canvas = <HTMLCanvasElement> document.getElementById('canvas');
@@ -61,7 +87,7 @@ function main() {
   // Initial call to load scene
   loadScene();
 
-  const camera = new Camera(vec3.fromValues(0, 0, -10), vec3.fromValues(0, 0, 0));
+  const camera = new Camera(vec3.fromValues(0, 10, -10), vec3.fromValues(0, 0, 0));
 
   const renderer = new OpenGLRenderer(canvas);
   renderer.setClearColor(164.0 / 255.0, 233.0 / 255.0, 1.0, 1);
@@ -85,7 +111,19 @@ function main() {
     processKeyPresses();
     renderer.render(camera, flat, [
       square,
-    ], time);
+    ], time, [
+      controls.s_Radius,
+      controls.s_Intensity_R,
+      controls.s_Intensity_G,
+      controls.s_Intensity_B,
+      controls.e_Rotation_Speed,
+      controls.e_Dist_From_Sun,
+      controls.e_Radius,
+      controls.m_Rotation_Speed,
+      controls.m_Dist_From_Earth,
+      controls.m_Radius,
+      controls.m_Crater_Radius
+    ]);
     time++;
     stats.end();
 
